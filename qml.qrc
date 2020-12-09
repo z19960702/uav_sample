@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>newvehicle.svg</file>
+        <file>boat.svg</file>
+    </qresource>
+</RCC>
