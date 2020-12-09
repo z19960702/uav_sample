@@ -18,13 +18,15 @@ public:
         IdentityRole        = Qt::UserRole + 3,
         Failure_TimeRole    = Qt::UserRole + 4
     };
-    VehicleList(QObject* parent = nullptr);
+    VehicleList(int uavGroupIP, int boatIP,double lat,double lon, QObject* parent = nullptr);
     void deleteUav(int index);
     void appendUav(const Vehicle& uav);
 
     void insertUav(int index, const Vehicle& uav);
 
     QList<Vehicle>      uavList() const { return _uavList; }
+    int      boatIP() const { return _boatIP; }
+    int      uavGroupIP() const { return _uavGroupIP; }
 
     // overload
     int      rowCount(const QModelIndex& parent = QModelIndex()) const;
@@ -40,6 +42,8 @@ protected:
 
 private:
     QList<Vehicle> _uavList;
+    int _uavGroupIP;
+    int _boatIP;
 };
 
 #endif // VEHICLELIST_H

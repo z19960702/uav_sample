@@ -8,7 +8,7 @@ const double Authenticate_Rate = 720.0;
 
 class Vehicle  {
 public:
-    Vehicle(int identity);
+    Vehicle(double lat,double lon,int identity);
 
     double latitude(void)const{
         return _latitude;

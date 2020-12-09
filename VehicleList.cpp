@@ -1,24 +1,25 @@
 #include "VehicleList.h"
 
-VehicleList::VehicleList(QObject* parent)
+VehicleList::VehicleList(int uavGroupIP, int boatIP,double lat,double lon,QObject* parent)
 : QAbstractListModel(parent)
 {
-
+    _uavGroupIP = uavGroupIP;
+    _boatIP = boatIP;
     for(int uav_index=1; uav_index <= UAV_Leader; uav_index++){
 
-        Vehicle uav = Vehicle(1);
+        Vehicle uav = Vehicle(lat,lon,1);
         beginInsertRows(QModelIndex(), rowCount(), rowCount());
         _uavList << uav;
         endInsertRows();
     }
     for(int uav_index=1; uav_index <= UAV_Part; uav_index++){
-        Vehicle uav = Vehicle(2);
+        Vehicle uav = Vehicle(lat,lon,2);
         beginInsertRows(QModelIndex(), rowCount(), rowCount());
         _uavList << uav;
         endInsertRows();
     }
     for(int uav_index=1; uav_index <= UAV_Num - UAV_Leader - UAV_Part; uav_index++){
-        Vehicle uav = Vehicle(3);
+        Vehicle uav = Vehicle(lat,lon,3);
         beginInsertRows(QModelIndex(), rowCount(), rowCount());
         _uavList << uav;
         endInsertRows();

@@ -11,44 +11,29 @@
 #include <QVariantList>
 #include <QTimer>
 
-#include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <vector>
-#include <queue>
-#include <numeric>
-#include <iterator>
 #include <math.h>
-#include <list>
-#include <string.h>
-#include <cstdlib>
-#include <bits/stdc++.h>
-using namespace std;
-
 
 class VehicleController: public QObject {
     Q_OBJECT
 
 public:
     VehicleController(QObject* parent = nullptr);
-    Q_PROPERTY(VehicleList* uavList READ getuavList NOTIFY uavListChanged)
-//    Q_PROPERTY(QVariant uavinfo READ getuavinfo NOTIFY uavinfoChanged)
-//    Q_INVOKABLE QVariant getCurrentUAVInfo(void);
-    Q_INVOKABLE void deleteUav(int index);
-//    double Exp(double lambda);
-    VehicleList* getuavList(){
-        return uavList;
+    Q_PROPERTY(QList<VehicleList*> uavGroupList READ getuavGroupList NOTIFY uavGroupListChanged)
+    Q_INVOKABLE void deleteUav(int gropuIP, int index,double lat,double lon);
+    Q_INVOKABLE void createList(int count,QList<int> uavGroupIPList, QList<int> boatIPList,QList<double> lat, QList<double> lon);
+    Q_INVOKABLE int getboatIP(int index){
+        return uavGroupList[index]->boatIP();
+    }
+    QList<VehicleList*> getuavGroupList(){
+        return uavGroupList;
     }
 signals:
-    void uavListChanged(VehicleList* uavList);
+    void uavGroupListChanged(QList<VehicleList*> uavGroupList);
     void uavtimeChanged();
 public slots:
     void uavrun();
 private:
-//    list<UAV_Group>UAV_Group_List;  //创建空list
-//    list<UAV>UAV_List;
-
-    VehicleList* uavList;
+    QList<VehicleList*> uavGroupList;
     QTimer timer;
 static int lat_orient;
 static int lon_orient;

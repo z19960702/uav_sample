@@ -12,133 +12,203 @@ Window {
     visible: true
     title: qsTr("UAV")
 
-    property real latiposition: 18
-    property real longposition: 114
-
+    property real latposition: 18
+    property real lonposition: 114
     property var uavlistmodel: ListModel {}
     property var boatlistmodel: ListModel {}
-    property real uavleadernum: 1
-    property real boatleadernum: 1
+    property var leader_boat_list: ListModel {} //leader和船之间的连线
+    property var parter_uav_list: ListModel {} //leader和partner之间的连线
+
     property real uavlinelatposition: 0
     property real uavlinelonposition: 0
     property real boatlinelatposition: 0
     property real boatlinelonposition: 0
     property real linesize: 0
-    property real xorient: 1
-    property real yorient: 1
-    property VehicleController vehicle_controller: VehicleController {}
-    property var uav_list: vehicle_controller.uavList
-    //property var uav_list: vehicle_controller.getCurrentUAVInfo()
-    property var parter_uav_list: ListModel {}
+    property var vehicle_controller: VehicleController {}
+    property var uav_list: vehicle_controller.uavGroupList
     property int shanshuoindex: 0
+    property int shanshuogroupindex: 0
+    property int shanshuouavindex: 0
     property real waittime: 0
+    property var boatlist: []
+    property var latlist: [17, 18, 19]
+    property var lonlist: [110, 114, 118]
+    //构建Controller
+    function showUAVInfo() {}
     Component.onCompleted: {
-        var current_time = 0
-        var index = 0
-        for (var i = 0; i < uav_list.rowCount(); i++) {
-            var uavdata = {
-                "lat": uav_list.data(uav_list.index(i, 0), 257),
-                "lon": uav_list.data(uav_list.index(i, 0), 258),
-                "lastlat": uav_list.data(uav_list.index(i, 0), 257),
-                "lastlon": uav_list.data(uav_list.index(i, 0), 258),
-                "altitude": 2000,
-                "identity": uav_list.data(uav_list.index(i, 0), 259),
-                "failuretime": uav_list.data(uav_list.index(i, 0), 260),
-                "display": true
-            }
+        var uavlist = [1, 2, 3]
+        boatlist = [0, 0, 1]
 
-            if (i === 0) {
-                current_time = uav_list.data(uav_list.index(i, 0), 260)
-                index = 0
-            } else {
-                if (current_time > uav_list.data(uav_list.index(i, 0), 260)) {
-                    index = i
-                    current_time = uav_list.data(uav_list.index(i, 0), 260)
-                }
-            }
+        vehicle_controller.createList(3, uavlist, boatlist, latlist, lonlist)
 
-            uavlistmodel.append(uavdata)
-            if (uav_list.data(uav_list.index(i, 0), 259) === 1) {
-                uavleadernum = i
-            }
-            if (uav_list.data(uav_list.index(i, 0), 259) === 2) {
-                parter_uav_list.append(uavdata)
-            }
-        }
-        shanshuoindex = index
-        chufatimer.interval = current_time
-        chufatimer.restart()
-        console.log("failuretime" + current_time)
-        for (var j = 0; j < 3; j++) {
+        boatlistmodel.clear()
+        uavlistmodel.clear()
+        parter_uav_list.clear()
+        leader_boat_list.clear()
+        for (var k = 0; k < 3; k++) {
             var boatdata = {
-                "lat": latiposition + Math.random() * 1 - 0.5,
-                "lon": longposition + Math.random() * 1 - 0.5,
-                "altitude": 0
+                "lat": latposition + Math.random() * 1 - 0.5,
+                "lon": lonposition + Math.random() * 1 - 0.5,
+                "boatIP": k
             }
             boatlistmodel.append(boatdata)
         }
+        var current_time = 1000000000
+
+        var uav_index = 0
+        for (var j = 0; j < uav_list.length; j++) {
+            var leaderlat = 0
+            var leaderlon = 0
+            var uavgroup = uav_list[j]
+            var boatip = vehicle_controller.getboatIP(j)
+            for (var i = 0; i < uavgroup.rowCount(); i++) {
+                var uavdata = {
+                    "lat": uavgroup.data(uavgroup.index(i, 0), 257),
+                    "lon": uavgroup.data(uavgroup.index(i, 0), 258),
+                    "lastlat": uavgroup.data(uavgroup.index(i, 0), 257),
+                    "lastlon": uavgroup.data(uavgroup.index(i, 0), 258),
+                    "identity": uavgroup.data(uavgroup.index(i, 0), 259),
+                    "failuretime": uavgroup.data(uavgroup.index(i, 0), 260),
+                    "boatNum": boatip,
+                    "display": true
+                }
+                if (current_time > uavgroup.data(uavgroup.index(i, 0), 260)) {
+                    shanshuoindex = i
+                    shanshuogroupindex = j
+                    shanshuouavindex = uav_index
+                    current_time = uavgroup.data(uavgroup.index(i, 0), 260)
+                }
+                uavlistmodel.append(uavdata)
+                if (uavgroup.data(uavgroup.index(i, 0), 259) === 1) {
+                    var data1 = {
+                        "uavlat": uavgroup.data(uavgroup.index(i, 0), 257),
+                        "uavlon": uavgroup.data(uavgroup.index(i, 0), 258),
+                        "boatlat": boatlistmodel.get(boatlist[j]).lat,
+                        "boatlon": boatlistmodel.get(boatlist[j]).lon,
+                        "touavlat": 0,
+                        "touavlon": 0,
+                        "toboatlat": 0,
+                        "toboatlon": 0
+                    }
+                    leaderlat = uavgroup.data(uavgroup.index(i, 0), 257)
+                    leaderlon = uavgroup.data(uavgroup.index(i, 0), 258)
+                    leader_boat_list.append(data1)
+                }
+                if (uavgroup.data(uavgroup.index(i, 0), 259) === 2) {
+                    var data2 = {
+                        "leaderlat": leaderlat,
+                        "leaderlon": leaderlon,
+                        "partnerlat": uavgroup.data(uavgroup.index(i, 0), 257),
+                        "partnerlon": uavgroup.data(uavgroup.index(i, 0), 258)
+                    }
+                    parter_uav_list.append(data2)
+                }
+                uav_index++
+            }
+        }
+        shanshuouavindex = chufatimer.interval = current_time
+        chufatimer.restart()
     }
 
     onUav_listChanged: {
-        parter_uav_list.clear()
-        for (var i = 0; i < uav_list.rowCount(); i++) {
-            uavlistmodel.set(i, {
-                                 "lat": uav_list.data(uav_list.index(i, 0),
-                                                      257),
-                                 "lon": uav_list.data(uav_list.index(i, 0),
-                                                      258),
-                                 "lastlat": uavlistmodel.get(i).lastlat,
-                                 "lastlon": uavlistmodel.get(i).lastlon,
-                                 "altitude": 2000,
-                                 "identity": uav_list.data(uav_list.index(i,
-                                                                          0),
-                                                           259)
-                             })
-            if (uav_list.data(uav_list.index(i, 0), 259) === 1) {
-                uavleadernum = i
-            }
-            if (uav_list.data(uav_list.index(i, 0), 259) === 2) {
-                parter_uav_list.append(uavlistmodel.get(i))
+        var uav_index = 0
+        var leader_boat_index = 0
+        var parter_uav_index = 0
+        for (var j = 0; j < uav_list.length; j++) {
+            var leaderlat = 0
+            var leaderlon = 0
+            var uavgroup = uav_list[j]
+            for (var i = 0; i < uavgroup.rowCount(); i++) {
+                var uavdata = {
+                    "lat": uavgroup.data(uavgroup.index(i, 0), 257),
+                    "lon": uavgroup.data(uavgroup.index(i, 0), 258),
+                    "lastlat": uavlistmodel.get(uav_index).lastlat,
+                    "lastlon": uavlistmodel.get(uav_index).lastlon,
+                    "identity": uavgroup.data(uavgroup.index(i, 0), 259),
+                    "failuretime": uavgroup.data(uavgroup.index(i, 0), 260),
+                    "display": true
+                }
+                uavlistmodel.set(uav_index, uavdata)
+                if (uavgroup.data(uavgroup.index(i, 0), 259) === 1) {
+                    var data1 = {
+                        "uavlat": uavgroup.data(uavgroup.index(i, 0), 257),
+                        "uavlon": uavgroup.data(uavgroup.index(i, 0), 258)
+                    }
+                    leaderlat = uavgroup.data(uavgroup.index(i, 0), 257)
+                    leaderlon = uavgroup.data(uavgroup.index(i, 0), 258)
+                    leader_boat_list.set(leader_boat_index, data1)
+                    leader_boat_index++
+                }
+                if (uavgroup.data(uavgroup.index(i, 0), 259) === 2) {
+                    var data2 = {
+                        "leaderlat": leaderlat,
+                        "leaderlon": leaderlon,
+                        "partnerlat": uavgroup.data(uavgroup.index(i, 0), 257),
+                        "partnerlon": uavgroup.data(uavgroup.index(i, 0), 258)
+                    }
+                    parter_uav_list.set(parter_uav_index, data2)
+                    parter_uav_index++
+                }
+                uav_index++
             }
         }
     }
+
     Connections {
         target: vehicle_controller
         function onUavtimeChanged() {
-            parter_uav_list.clear()
-            var current_time = 0
-            var index = 0
-            for (var i = 0; i < uav_list.rowCount(); i++) {
-                uavlistmodel.set(i, {
-                                     "lat": uav_list.data(uav_list.index(i, 0),
-                                                          257),
-                                     "lon": uav_list.data(uav_list.index(i, 0),
-                                                          258),
-                                     "lastlat": uavlistmodel.get(i).lastlat,
-                                     "lastlon": uavlistmodel.get(i).lastlon,
-                                     "altitude": 2000,
-                                     "identity": uav_list.data(uav_list.index(
-                                                                   i, 0), 259),
-                                     "display": true
-                                 })
-                if (uav_list.data(uav_list.index(i, 0), 259) === 1) {
-                    uavleadernum = i
-                }
-                if (uav_list.data(uav_list.index(i, 0), 259) === 2) {
-                    parter_uav_list.append(uavlistmodel.get(i))
-                }
-                if (i === 0) {
-                    current_time = uav_list.data(uav_list.index(i, 0), 260)
-                    index = 0
-                } else {
-                    if (current_time > uav_list.data(uav_list.index(i,
-                                                                    0), 260)) {
-                        index = i
-                        current_time = uav_list.data(uav_list.index(i, 0), 260)
+            var current_time = 1000000000
+            var uav_index = 0
+            var leader_boat_index = 0
+            var parter_uav_index = 0
+            for (var j = 0; j < uav_list.length; j++) {
+                var leaderlat = 0
+                var leaderlon = 0
+                var uavgroup = uav_list[j]
+                var boatip = vehicle_controller.getboatIP(j)
+                for (var i = 0; i < uavgroup.rowCount(); i++) {
+                    var uavdata = {
+                        "lat": uavgroup.data(uavgroup.index(i, 0), 257),
+                        "lon": uavgroup.data(uavgroup.index(i, 0), 258),
+                        "lastlat": uavlistmodel.get(uav_index).lastlat,
+                        "lastlon": uavlistmodel.get(uav_index).lastlon,
+                        "identity": uavgroup.data(uavgroup.index(i, 0), 259),
+                        "failuretime": uavgroup.data(uavgroup.index(i, 0), 260),
+                        "display": true
                     }
+                    uavlistmodel.set(uav_index, uavdata)
+                    if (current_time > uavgroup.data(uavgroup.index(i,
+                                                                    0), 260)) {
+                        shanshuoindex = i
+                        shanshuogroupindex = j
+                        shanshuouavindex = uav_index
+                        current_time = uavgroup.data(uavgroup.index(i, 0), 260)
+                    }
+                    if (uavgroup.data(uavgroup.index(i, 0), 259) === 1) {
+                        var data1 = {
+                            "uavlat": uavgroup.data(uavgroup.index(i, 0), 257),
+                            "uavlon": uavgroup.data(uavgroup.index(i, 0), 258)
+                        }
+                        leaderlat = uavgroup.data(uavgroup.index(i, 0), 257)
+                        leaderlon = uavgroup.data(uavgroup.index(i, 0), 258)
+                        leader_boat_list.set(leader_boat_index, data1)
+                        leader_boat_index++
+                    }
+                    if (uavgroup.data(uavgroup.index(i, 0), 259) === 2) {
+                        var data2 = {
+                            "leaderlat": leaderlat,
+                            "leaderlon": leaderlon,
+                            "partnerlat": uavgroup.data(uavgroup.index(i, 0),
+                                                        257),
+                            "partnerlon": uavgroup.data(uavgroup.index(i, 0),
+                                                        258)
+                        }
+                        parter_uav_list.set(parter_uav_index, data2)
+                        parter_uav_index++
+                    }
+                    uav_index++
                 }
             }
-            shanshuoindex = index
             chufatimer.interval = current_time
             chufatimer.restart()
         }
@@ -158,78 +228,28 @@ Window {
             jiantou2.opacity = 0.01 * linesize
             jiantou3.opacity = 0.01 * linesize
             jiantou4.opacity = 0.01 * linesize
-            uavlinelatposition = boatlistmodel.get(
-                        boatleadernum).lat + (uavlistmodel.get(
-                                                  uavleadernum).lat - boatlistmodel.get(
-                                                  boatleadernum).lat) * 0.01 * linesize
-            uavlinelonposition = boatlistmodel.get(
-                        boatleadernum).lon + (uavlistmodel.get(
-                                                  uavleadernum).lon - boatlistmodel.get(
-                                                  boatleadernum).lon) * 0.01 * linesize
-            uavpolyline.path = [{
-                                    "latitude": uavlinelatposition,
-                                    "longitude": uavlinelonposition
-                                }, {
-                                    "latitude": boatlistmodel.get(
-                                                    boatleadernum).lat,
-                                    "longitude": boatlistmodel.get(
-                                                     boatleadernum).lon
-                                }]
-            boatlinelatposition = uavlistmodel.get(
-                        uavleadernum).lat + (boatlistmodel.get(
-                                                 boatleadernum).lat - uavlistmodel.get(
-                                                 uavleadernum).lat) * 0.01 * linesize
-            boatlinelonposition = uavlistmodel.get(
-                        uavleadernum).lon + (boatlistmodel.get(
-                                                 boatleadernum).lon - uavlistmodel.get(
-                                                 uavleadernum).lon) * 0.01 * linesize
-            boatpolyline.path = [{
-                                     "latitude": uavlistmodel.get(
-                                                     uavleadernum).lat,
-                                     "longitude": uavlistmodel.get(
-                                                      uavleadernum).lon
-                                 }, {
-                                     "latitude": boatlinelatposition,
-                                     "longitude": boatlinelonposition
-                                 }]
-            jiantou1.coordinate = QtPositioning.coordinate(uavlinelatposition,
-                                                           uavlinelonposition)
-            jiantou1.rotation = QtPositioning.coordinate(
-                        uavlinelatposition, uavlinelonposition).azimuthTo(
-                        QtPositioning.coordinate(
-                            boatlistmodel.get(boatleadernum).lat,
-                            boatlistmodel.get(boatleadernum).lon))
-
-            jiantou2.coordinate = QtPositioning.coordinate(boatlinelatposition,
-                                                           boatlinelonposition)
-            jiantou2.rotation = QtPositioning.coordinate(
-                        boatlinelatposition, boatlinelonposition).azimuthTo(
-                        QtPositioning.coordinate(
-                            uavlistmodel.get(uavleadernum).lat,
-                            uavlistmodel.get(uavleadernum).lon))
-
-            jiantou3.coordinate = QtPositioning.coordinate(
-                        boatlistmodel.get(boatleadernum).lat,
-                        boatlistmodel.get(boatleadernum).lon)
-            jiantou3.rotation = 180 + QtPositioning.coordinate(
-                        uavlinelatposition, uavlinelonposition).azimuthTo(
-                        QtPositioning.coordinate(
-                            boatlistmodel.get(boatleadernum).lat,
-                            boatlistmodel.get(boatleadernum).lon))
-
-            jiantou4.coordinate = QtPositioning.coordinate(
-                        uavlistmodel.get(uavleadernum).lat,
-                        uavlistmodel.get(uavleadernum).lon)
-            jiantou4.rotation = 180 + QtPositioning.coordinate(
-                        boatlinelatposition, boatlinelonposition).azimuthTo(
-                        QtPositioning.coordinate(
-                            uavlistmodel.get(uavleadernum).lat,
-                            uavlistmodel.get(uavleadernum).lon))
+            for (var i = 0; i < leader_boat_list.count; i++) {
+                leader_boat_list.get(i).touavlat = leader_boat_list.get(
+                            i).boatlat + ((leader_boat_list.get(
+                                               i).uavlat - leader_boat_list.get(
+                                               i).boatlat) * 0.01 * linesize)
+                leader_boat_list.get(i).touavlon = leader_boat_list.get(
+                            i).boatlon + ((leader_boat_list.get(
+                                               i).uavlon - leader_boat_list.get(
+                                               i).boatlon) * 0.01 * linesize)
+                leader_boat_list.get(i).toboatlat = leader_boat_list.get(
+                            i).uavlat + ((leader_boat_list.get(
+                                              i).boatlat - leader_boat_list.get(
+                                              i).uavlat) * 0.01 * linesize)
+                leader_boat_list.get(i).toboatlon = leader_boat_list.get(
+                            i).uavlon + ((leader_boat_list.get(
+                                              i).boatlon - leader_boat_list.get(
+                                              i).uavlon) * 0.01 * linesize)
+            }
 
             linesize++
         }
     }
-
     Timer {
         id: chufatimer
         onTriggered: {
@@ -242,8 +262,8 @@ Window {
         interval: 100
         repeat: true
         onTriggered: {
-            uavlistmodel.get(shanshuoindex).display = !uavlistmodel.get(
-                        shanshuoindex).display
+            uavlistmodel.get(shanshuouavindex).display = !uavlistmodel.get(
+                        shanshuouavindex).display
         }
     }
 
@@ -252,8 +272,9 @@ Window {
         interval: 2000
         onTriggered: {
             shanshuotimer.running = false
-            console.log("index" + shanshuoindex)
-            vehicle_controller.deleteUav(shanshuoindex)
+            vehicle_controller.deleteUav(shanshuogroupindex, shanshuoindex,
+                                         latlist[shanshuogroupindex],
+                                         lonlist[shanshuogroupindex])
         }
     }
 
@@ -266,135 +287,182 @@ Window {
         id: map
         anchors.fill: parent
         plugin: mapPlugin
-        center: QtPositioning.coordinate(latiposition, longposition) //南海区域的经纬度
+        center: QtPositioning.coordinate(latposition, lonposition) //南海区域的经纬度
         zoomLevel: 7
-        MapPolyline {
+        MapItemView {
             id: uavpolyline
-            line.width: 2
-            line.color: 'green'
-            transform: Translate {
-                y: y + 2
+            model: leader_boat_list
+            delegate: MapPolyline {
+                line.width: 2
+                line.color: 'green'
+                path: [{
+                        "latitude": boatlat,
+                        "longitude": boatlon
+                    }, {
+                        "latitude": touavlat,
+                        "longitude": touavlon
+                    }]
+                transform: Translate {
+                    y: 2
+                }
             }
-            opacity: 0
         }
-        MapQuickItem {
+        MapItemView {
             id: jiantou1
-            anchorPoint.x: sourceItem.width / 2
-            anchorPoint.y: sourceItem.height / 2
-            transform: Translate {
-                y: y + 2
-            }
-            sourceItem: Item {
-                width: 10
-                height: 10
-                transform: Rotation {
-                    origin.x: width / 2
-                    origin.y: height / 2
+            model: leader_boat_list
+            delegate: MapQuickItem {
+
+                coordinate: QtPositioning.coordinate(touavlat, touavlon)
+                anchorPoint.x: sourceItem.width / 2
+                anchorPoint.y: sourceItem.height / 2
+                transform: Translate {
+                    y: 2
                 }
-                Canvas {
-                    anchors.fill: parent
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.fillStyle = "green"
-                        ctx.moveTo(0, 0)
-                        ctx.lineTo(10, 0)
-                        ctx.lineTo(5, 10)
-                        ctx.lineTo(0, 0)
-                        ctx.fill()
+                rotation: QtPositioning.coordinate(touavlat,
+                                                   touavlon).azimuthTo(
+                              QtPositioning.coordinate(boatlat, boatlon))
+                sourceItem: Item {
+                    width: 10
+                    height: 10
+                    transform: Rotation {
+                        origin.x: width / 2
+                        origin.y: height / 2
+                    }
+                    Canvas {
+                        anchors.fill: parent
+                        onPaint: {
+                            var ctx = getContext("2d")
+                            ctx.fillStyle = "green"
+                            ctx.moveTo(0, 0)
+                            ctx.lineTo(10, 0)
+                            ctx.lineTo(5, 10)
+                            ctx.lineTo(0, 0)
+                            ctx.fill()
+                        }
                     }
                 }
             }
         }
-        MapQuickItem {
+        MapItemView {
             id: jiantou3
-            anchorPoint.x: sourceItem.width / 2
-            anchorPoint.y: sourceItem.height / 2
-            transform: Translate {
-                y: y + 2
-            }
-            sourceItem: Item {
-                width: 10
-                height: 10
-                transform: Rotation {
-                    origin.x: width / 2
-                    origin.y: height / 2
+            model: leader_boat_list
+            delegate: MapQuickItem {
+                coordinate: QtPositioning.coordinate(boatlat, boatlon)
+                anchorPoint.x: sourceItem.width / 2
+                anchorPoint.y: sourceItem.height / 2
+                transform: Translate {
+                    y: 2
                 }
-                Canvas {
-                    anchors.fill: parent
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.fillStyle = "green"
-                        ctx.moveTo(0, 0)
-                        ctx.lineTo(10, 0)
-                        ctx.lineTo(5, 10)
-                        ctx.lineTo(0, 0)
-                        ctx.fill()
+                rotation: 180 + QtPositioning.coordinate(touavlat,
+                                                         touavlon).azimuthTo(
+                              QtPositioning.coordinate(boatlat, boatlon))
+                sourceItem: Item {
+                    width: 10
+                    height: 10
+                    transform: Rotation {
+                        origin.x: width / 2
+                        origin.y: height / 2
+                    }
+                    Canvas {
+                        anchors.fill: parent
+                        onPaint: {
+                            var ctx = getContext("2d")
+                            ctx.fillStyle = "green"
+                            ctx.moveTo(0, 0)
+                            ctx.lineTo(10, 0)
+                            ctx.lineTo(5, 10)
+                            ctx.lineTo(0, 0)
+                            ctx.fill()
+                        }
                     }
                 }
             }
         }
-
-        MapPolyline {
+        MapItemView {
             id: boatpolyline
-            line.width: 2
-            line.color: 'orange'
-            transform: Translate {
-                y: y - 2
+            model: leader_boat_list
+            delegate: MapPolyline {
+                line.width: 2
+                line.color: 'orange'
+                path: [{
+                        "latitude": uavlat,
+                        "longitude": uavlon
+                    }, {
+                        "latitude": toboatlat,
+                        "longitude": toboatlon
+                    }]
+                transform: Translate {
+                    y: 2
+                }
             }
         }
-        MapQuickItem {
+        MapItemView {
             id: jiantou2
-            anchorPoint.x: sourceItem.width / 2
-            anchorPoint.y: sourceItem.height / 2
-            transform: Translate {
-                y: y - 2
-            }
-            sourceItem: Item {
-                width: 10
-                height: 10
-                transform: Rotation {
-                    origin.x: width / 2
-                    origin.y: height / 2
+            model: leader_boat_list
+            delegate: MapQuickItem {
+                coordinate: QtPositioning.coordinate(toboatlat, toboatlon)
+                anchorPoint.x: sourceItem.width / 2
+                anchorPoint.y: sourceItem.height / 2
+                transform: Translate {
+                    y: 2
                 }
-                Canvas {
-                    anchors.fill: parent
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.fillStyle = "orange"
-                        ctx.moveTo(0, 0)
-                        ctx.lineTo(10, 0)
-                        ctx.lineTo(5, 10)
-                        ctx.lineTo(0, 0)
-                        ctx.fill()
+                rotation: QtPositioning.coordinate(toboatlat,
+                                                   toboatlon).azimuthTo(
+                              QtPositioning.coordinate(uavlat, uavlon))
+                sourceItem: Item {
+                    width: 10
+                    height: 10
+                    transform: Rotation {
+                        origin.x: width / 2
+                        origin.y: height / 2
+                    }
+                    Canvas {
+                        anchors.fill: parent
+                        onPaint: {
+                            var ctx = getContext("2d")
+                            ctx.fillStyle = "orange"
+                            ctx.moveTo(0, 0)
+                            ctx.lineTo(10, 0)
+                            ctx.lineTo(5, 10)
+                            ctx.lineTo(0, 0)
+                            ctx.fill()
+                        }
                     }
                 }
             }
         }
-
-        MapQuickItem {
+        MapItemView {
             id: jiantou4
-            anchorPoint.x: sourceItem.width / 2
-            anchorPoint.y: sourceItem.height / 2
-            transform: Translate {
-                y: y - 2
-            }
-            sourceItem: Item {
-                width: 10
-                height: 10
-                transform: Rotation {
-                    origin.x: width / 2
-                    origin.y: height / 2
+            model: leader_boat_list
+            delegate: MapQuickItem {
+
+                coordinate: QtPositioning.coordinate(uavlat, uavlon)
+                anchorPoint.x: sourceItem.width / 2
+                anchorPoint.y: sourceItem.height / 2
+                transform: Translate {
+                    y: 2
                 }
-                Canvas {
-                    anchors.fill: parent
-                    onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.fillStyle = "orange"
-                        ctx.moveTo(0, 0)
-                        ctx.lineTo(10, 0)
-                        ctx.lineTo(5, 10)
-                        ctx.lineTo(0, 0)
-                        ctx.fill()
+                rotation: 180 + QtPositioning.coordinate(toboatlat,
+                                                         toboatlon).azimuthTo(
+                              QtPositioning.coordinate(uavlat, uavlon))
+                sourceItem: Item {
+                    width: 10
+                    height: 10
+                    transform: Rotation {
+                        origin.x: width / 2
+                        origin.y: height / 2
+                    }
+                    Canvas {
+                        anchors.fill: parent
+                        onPaint: {
+                            var ctx = getContext("2d")
+                            ctx.fillStyle = "orange"
+                            ctx.moveTo(0, 0)
+                            ctx.lineTo(10, 0)
+                            ctx.lineTo(5, 10)
+                            ctx.lineTo(0, 0)
+                            ctx.fill()
+                        }
                     }
                 }
             }
@@ -407,19 +475,20 @@ Window {
                 line.width: 2
                 line.color: "skyblue"
                 path: [{
-                        "latitude": lat,
-                        "longitude": lon
+                        "latitude": leaderlat,
+                        "longitude": leaderlon
                     }, {
-                        "latitude": uavlistmodel.get(uavleadernum).lat,
-                        "longitude": uavlistmodel.get(uavleadernum).lon
+                        "latitude": partnerlat,
+                        "longitude": partnerlon
                     }]
             }
         }
+
         //小船
         MapItemView {
             model: boatlistmodel
             delegate: MapQuickItem {
-                coordinate: QtPositioning.coordinate(lat, lon, altitude)
+                coordinate: QtPositioning.coordinate(lat, lon)
                 anchorPoint.x: boatItem.width / 2
                 anchorPoint.y: boatItem.height / 2
                 sourceItem: Item {
@@ -442,7 +511,7 @@ Window {
             id: uavshow
             model: uavlistmodel
             delegate: MapQuickItem {
-                coordinate: QtPositioning.coordinate(lat, lon, altitude)
+                coordinate: QtPositioning.coordinate(lat, lon)
                 anchorPoint.x: sourceItem.width / 2
                 anchorPoint.y: sourceItem.height / 2
                 sourceItem: Item {
@@ -459,11 +528,10 @@ Window {
                     Item {
                         id: name
                         anchors.fill: parent
-                        rotation: 180 + QtPositioning.coordinate(
-                                      lat, lon, altitude).azimuthTo(
+                        rotation: 180 + QtPositioning.coordinate(lat,
+                                                                 lon).azimuthTo(
                                       QtPositioning.coordinate(lastlat,
-                                                               lastlon,
-                                                               altitude))
+                                                               lastlon))
                         Rectangle {
                             width: 2
                             height: 20
