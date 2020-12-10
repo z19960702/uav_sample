@@ -1,15 +1,12 @@
 ﻿#include "VehicleController.h"
 #include <QDebug>
 
-int VehicleController::lat_orient = 1;
-int VehicleController::lon_orient = 1;
 VehicleController::VehicleController(QObject* parent ) : QObject(parent)
 
 {
     connect(&timer,SIGNAL(timeout()),this,SLOT(uavrun()));
-    timer.setInterval(20);
+    timer.setInterval(16);
     timer.start();
-
 }
 
 void VehicleController::createList(int count,QList<int> uavGroupIPList, QList<int> boatIPList,QList<double> lat, QList<double> lon)
@@ -43,11 +40,13 @@ void VehicleController::deleteUav(int gropuIP,int num,double lat,double lon)
             if(QVariant(uavList->data(uavList->index(i),VehicleList::IdentityRole)).toInt() == 2 and !blueflag){
                 uavList->setData(uavList->index(i), 1, VehicleList::IdentityRole);
                 blueflag = true;
+                uavList->setData(uavList->index(i), true, VehicleList::ChangeTypeRole);
             }
 
             if(QVariant(uavList->data(uavList->index(i),VehicleList::IdentityRole)).toInt()==3 and !yellowflag){
                 uavList->setData(uavList->index(i), 2, VehicleList::IdentityRole);
                 yellowflag = true;
+                uavList->setData(uavList->index(i), true, VehicleList::ChangeTypeRole);
             }
         }
     }
@@ -56,11 +55,19 @@ void VehicleController::deleteUav(int gropuIP,int num,double lat,double lon)
             if(QVariant(uavList->data(uavList->index(i),VehicleList::IdentityRole)).toInt()==3 and !yellowflag){
                 uavList->setData(uavList->index(i), 2, VehicleList::IdentityRole);
                 yellowflag = true;
+                uavList->setData(uavList->index(i), true, VehicleList::ChangeTypeRole);
             }
         }
     }
     emit uavGroupListChanged(uavGroupList);
     emit uavtimeChanged();
+
+    for(int j = 0;j<uavGroupList.count();j++){
+        VehicleList* uav_List = uavGroupList[j];
+        for(int i =0;i<uav_List->rowCount();i++){
+            uav_List->setData(uav_List->index(i), false, VehicleList::ChangeTypeRole);
+        }
+    }
 }
 
 void VehicleController::uavrun()
@@ -70,20 +77,14 @@ void VehicleController::uavrun()
         for(int i = 0; i < uavList->rowCount();i++) {
             double lat = uavList->data(uavList->index(i),VehicleList::LatitudeRole).toDouble() ;
             double lon = uavList->data(uavList->index(i),VehicleList::LongtitudeRole).toDouble();
-//            if(lat > 19)
-//                lat_orient = -1;
-//            if(lat< 17)
-//                lat_orient = 1;
-//            if(lon > 118)
-//                lon_orient = -1;
-//            if(lon< 110)
-//                lon_orient = 1;
-            lat = lat + ((double)rand()/(double)RAND_MAX)*0.01*lat_orient;
-            lon = lon + ((double)rand()/(double)RAND_MAX)*0.01*lon_orient;
+            lat = lat + 0.001 * uavList-> yorient();
+            lon = lon + 0.001 * uavList-> xorient();
             uavList->setData(uavList->index(i), lat, VehicleList::LatitudeRole);
             uavList->setData(uavList->index(i), lon, VehicleList::LongtitudeRole);
         }
     }
     emit uavGroupListChanged(uavGroupList);
 }
+
+
 

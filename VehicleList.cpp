@@ -1,10 +1,19 @@
 #include "VehicleList.h"
+#include <QDebug>
 
 VehicleList::VehicleList(int uavGroupIP, int boatIP,double lat,double lon,QObject* parent)
 : QAbstractListModel(parent)
 {
+    connect(&flighttimer,SIGNAL(timeout()),this,SLOT(uavrunorient()));
+    flighttimer.setInterval(30000);
+    flighttimer.start();
     _uavGroupIP = uavGroupIP;
     _boatIP = boatIP;
+
+    _centerlat = lat;
+    _centerlon = lon;
+    _xorient = (double)rand()/(double)RAND_MAX;
+    _yorient = (double)rand()/(double)RAND_MAX;
     for(int uav_index=1; uav_index <= UAV_Leader; uav_index++){
 
         Vehicle uav = Vehicle(lat,lon,1);
@@ -55,6 +64,14 @@ bool VehicleList::setData(const QModelIndex& index, const QVariant& value, int r
         p.setfailureTime(value.toLongLong());
         emit dataChanged(index, index);
         result = true;
+    }else if (role == UAVIPRole) {
+        p.setuavIP(value.toInt());
+        emit dataChanged(index, index);
+        result = true;
+    }else if (role == ChangeTypeRole) {
+        p.setchangeType(value.toBool());
+        emit dataChanged(index, index);
+        result = true;
     }
     return result;
 }
@@ -93,9 +110,11 @@ QHash<int, QByteArray> VehicleList::roleNames() const
 {
     QHash<int, QByteArray> roles;
     roles[Failure_TimeRole] = "failure_Time";
-    roles[LatitudeRole]   = "latitude";
-    roles[LongtitudeRole]    = "longitude";
-    roles[IdentityRole]    = "identity";
+    roles[LatitudeRole]     = "latitude";
+    roles[LongtitudeRole]   = "longitude";
+    roles[IdentityRole]     = "identity";
+    roles[UAVIPRole]        = "uavip";
+    roles[ChangeTypeRole]   = "changeType";
     return roles;
 }
 QVariant VehicleList::data(const QModelIndex& index, int role) const
@@ -112,6 +131,10 @@ QVariant VehicleList::data(const QModelIndex& index, int role) const
         return QVariant::fromValue(uav.identity());
     } else if (role == Failure_TimeRole) {
         return QVariant::fromValue(uav.failureTime());
+    }else if (role == UAVIPRole) {
+        return QVariant::fromValue(uav.uavIP());
+    }else if (role == ChangeTypeRole) {
+        return QVariant::fromValue(uav.changeType());
     }
     return QVariant();
 }
@@ -122,3 +145,8 @@ int VehicleList::rowCount(const QModelIndex& parent) const
 }
 
 
+void VehicleList::uavrunorient()
+{
+     _yorient = -_yorient;
+      _xorient = -_xorient;
+}

@@ -10,6 +10,9 @@ class Vehicle  {
 public:
     Vehicle(double lat,double lon,int identity);
 
+    int uavIP(void)const{
+        return _uavIP;
+    }
     double latitude(void)const{
         return _latitude;
     }
@@ -21,6 +24,16 @@ public:
     }
     long long failureTime(void)const{
         return _failureTime;
+    }
+    bool changeType(void)const{
+        return _changeType;
+    }
+
+    void setchangeType(bool changeType){
+        _changeType = changeType;
+    }
+    void setuavIP(int uavIP){
+        _uavIP = uavIP;
     }
     void setidentity(int id){
         _identity = id;
@@ -34,16 +47,19 @@ public:
     void setfailureTime(long long failureTime){
         _failureTime = failureTime;
     }
+
     double Exp(double lambda);
 
 private:
     double _latitude;
     double _longtitude;
-   // int UAV_IP;
+    int _uavIP;
+    bool _changeType;
 //    int Security_Level;
 //    int UAV_Group_IP;
     int _identity;
     long long _failureTime;
+
 
 };
 #endif // VEHICLE_H

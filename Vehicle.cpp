@@ -6,11 +6,14 @@
 
 Vehicle::Vehicle(double lat,double lon, int identity)
 {
-    _latitude = lat + (double)rand()/(double)RAND_MAX;
-    _longtitude = lon + (double)rand()/(double)RAND_MAX;
+    _latitude = lat + (double)rand()/(double)RAND_MAX+0.01;
+    _longtitude = lon + (double)rand()/(double)RAND_MAX+0.01;
     _identity = identity;
-    //_failureTime = Exp(Failure_Rate)* 10000;
-    _failureTime = 1000 + rand() % 5000;
+    _uavIP = rand();
+    _changeType = false;
+    _failureTime = Exp(Failure_Rate)* 50000;
+    //_failureTime = 4000 + rand() % 5000;
+
 }
 double Vehicle::Exp(double lambda){
     double pV = 0.0;

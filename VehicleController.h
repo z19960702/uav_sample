@@ -35,8 +35,7 @@ public slots:
 private:
     QList<VehicleList*> uavGroupList;
     QTimer timer;
-static int lat_orient;
-static int lon_orient;
+
 };
 
 #endif

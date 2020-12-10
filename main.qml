@@ -33,6 +33,7 @@ Window {
     property var boatlist: []
     property var latlist: [17, 18, 19]
     property var lonlist: [110, 114, 118]
+
     //构建Controller
     function showUAVInfo() {}
     Component.onCompleted: {
@@ -70,7 +71,9 @@ Window {
                     "identity": uavgroup.data(uavgroup.index(i, 0), 259),
                     "failuretime": uavgroup.data(uavgroup.index(i, 0), 260),
                     "boatNum": boatip,
-                    "display": true
+                    "display": true,
+                    "uavip": uavgroup.data(uavgroup.index(i, 0), 261),
+                    "changetype": uavgroup.data(uavgroup.index(i, 0), 262)
                 }
                 if (current_time > uavgroup.data(uavgroup.index(i, 0), 260)) {
                     shanshuoindex = i
@@ -115,15 +118,17 @@ Window {
         var leader_boat_index = 0
         var parter_uav_index = 0
         for (var j = 0; j < uav_list.length; j++) {
+            if (uavlistmodel.count === 0)
+                break
             var leaderlat = 0
             var leaderlon = 0
             var uavgroup = uav_list[j]
             for (var i = 0; i < uavgroup.rowCount(); i++) {
                 var uavdata = {
+                    "lastlat": uavlistmodel.get(uav_index).lat,
+                    "lastlon": uavlistmodel.get(uav_index).lon,
                     "lat": uavgroup.data(uavgroup.index(i, 0), 257),
                     "lon": uavgroup.data(uavgroup.index(i, 0), 258),
-                    "lastlat": uavlistmodel.get(uav_index).lastlat,
-                    "lastlon": uavlistmodel.get(uav_index).lastlon,
                     "identity": uavgroup.data(uavgroup.index(i, 0), 259),
                     "failuretime": uavgroup.data(uavgroup.index(i, 0), 260),
                     "display": true
@@ -168,13 +173,15 @@ Window {
                 var boatip = vehicle_controller.getboatIP(j)
                 for (var i = 0; i < uavgroup.rowCount(); i++) {
                     var uavdata = {
+                        "lastlat": uavlistmodel.get(uav_index).lat,
+                        "lastlon": uavlistmodel.get(uav_index).lon,
                         "lat": uavgroup.data(uavgroup.index(i, 0), 257),
                         "lon": uavgroup.data(uavgroup.index(i, 0), 258),
-                        "lastlat": uavlistmodel.get(uav_index).lastlat,
-                        "lastlon": uavlistmodel.get(uav_index).lastlon,
                         "identity": uavgroup.data(uavgroup.index(i, 0), 259),
                         "failuretime": uavgroup.data(uavgroup.index(i, 0), 260),
-                        "display": true
+                        "display": true,
+                        "uavip": uavgroup.data(uavgroup.index(i, 0), 261),
+                        "changetype": uavgroup.data(uavgroup.index(i, 0), 262)
                     }
                     uavlistmodel.set(uav_index, uavdata)
                     if (current_time > uavgroup.data(uavgroup.index(i,
@@ -262,8 +269,9 @@ Window {
         interval: 100
         repeat: true
         onTriggered: {
-            uavlistmodel.get(shanshuouavindex).display = !uavlistmodel.get(
-                        shanshuouavindex).display
+            if (shanshuouavindex < uavlistmodel.count)
+                uavlistmodel.get(shanshuouavindex).display = !uavlistmodel.get(
+                            shanshuouavindex).display
         }
     }
 
@@ -519,12 +527,33 @@ Window {
                     width: 40
                     height: 20
                     visible: display
+                    property real change_type: changetype
+
+                    property real change_distence: QtPositioning.coordinate(
+                                                       lat, lon).distanceTo(
+                                                       QtPositioning.coordinate(
+                                                           lastlat, lastlon))
                     property color uav_color: identity == 1 ? "red" : identity
                                                               == 2 ? "blue" : "yellow"
                     transform: Rotation {
                         origin.x: vehicleItem.width / 2
                         origin.y: vehicleItem.height / 2
                     }
+
+                    NumberAnimation {
+                        id: opacityAnimation
+                        target: vehicleItem
+                        property: "opacity"
+                        duration: 2000
+                        from: 0
+                        to: 1
+                    }
+                    onChange_typeChanged: {
+                        if (change_type) {
+                            opacityAnimation.start()
+                        }
+                    }
+
                     Item {
                         id: name
                         anchors.fill: parent
